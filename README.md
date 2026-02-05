@@ -7,7 +7,7 @@ I built PanicButton because I was tired of opening five different 10-page syllab
 ### Why I made this
 University is stressful, and the "panic" usually hits when you realize you don't actually know what's due next week. Most apps try to make you organize your whole life. PanicButton just tries to give you a clear list of dates so you can breathe.
 
-🌐 Live demo: https://panicbutton-sigma.vercel.app
+🌐 Live demo: https://panicbutton-app.vercel.app
 
 
 ## What it actually does
