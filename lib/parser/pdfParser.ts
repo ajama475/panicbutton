@@ -1,7 +1,8 @@
-import * as pdfjs from "pdfjs-dist";
-import pdfjsWorker from "pdfjs-dist/build/pdf.worker.min.js";
+// 1. Import from the 'legacy' folder
+import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
 
-pdfjs.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+// 2. Use the legacy worker path
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/legacy/build/pdf.worker.min.mjs`;
 
 export interface ParseResult {
   text: string;
@@ -11,28 +12,33 @@ export interface ParseResult {
 }
 
 export async function parsePDF(file: File): Promise<ParseResult> {
-  const arrayBuffer = await file.arrayBuffer();
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    
+    const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
+    const pdf = await loadingTask.promise;
+    
+    let fullText = "";
 
-  const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
-  const pdf = await loadingTask.promise;
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      
+      const pageText = textContent.items
+        .map((item: any) => item.str || "")
+        .join(" ");
+        
+      fullText += pageText + "\n";
+    }
 
-  let fullText = "";
-
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i);
-    const textContent = await page.getTextContent();
-
-    const pageText = textContent.items
-      .map((item: any) => ("str" in item ? item.str : ""))
-      .join(" ");
-
-    fullText += pageText + "\n";
+    return {
+      text: fullText,
+      metadata: { pages: pdf.numPages },
+    };
+  } catch (error) {
+    console.error("PDF Parsing Error:", error);
+    throw error;
   }
-
-  return {
-    text: fullText,
-    metadata: { pages: pdf.numPages },
-  };
 }
 
 
