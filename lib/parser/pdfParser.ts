@@ -1,7 +1,6 @@
 import * as pdfjs from "pdfjs-dist";
-import pdfjsWorker from "pdfjs-dist/build/pdf.worker.min.js";
 
-pdfjs.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
 export interface ParseResult {
   text: string;
@@ -12,6 +11,7 @@ export interface ParseResult {
 
 export async function parsePDF(file: File): Promise<ParseResult> {
   const arrayBuffer = await file.arrayBuffer();
+  
   const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
   const pdf = await loadingTask.promise;
 
@@ -21,8 +21,9 @@ export async function parsePDF(file: File): Promise<ParseResult> {
     const page = await pdf.getPage(i);
     const textContent = await page.getTextContent();
 
+    // Extract text items and join them
     const pageText = textContent.items
-      .map((item: any) => item.str)
+      .map((item: any) => ("str" in item ? item.str : ""))
       .join(" ");
 
     fullText += pageText + "\n";
