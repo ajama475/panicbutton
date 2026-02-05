@@ -12,7 +12,6 @@ PanicButton is more of a document-to-structure pipeline than a planner, learning
 The name *PanicButton* reflects the moment of use, not the outcome. The system’s purpose is rapid de-escalation through clarity.
 
 
-
 ## 2. The Problem: Academic Information Fails When Students Need It Most
 
 University students routinely face moments of panic caused by uncertainty, not lack of effort.
