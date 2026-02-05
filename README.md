@@ -26,13 +26,13 @@ You give it a syllabus PDF, and it tries to find the deadlines for you.
 
 ## How I'm building it (Phase 1)
 
-### 📄 PDF Reading
+###  PDF Reading
 It uses a library to pull text out of the PDF right in your browser. I didn't want to build a server that stores student files, so your syllabus stays on your computer.
 
-### 📅 Finding Deadlines
+### Finding Deadlines
 Right now, I'm using "rule-based" logic. This means the code looks for specific patterns like "Midterm," "Due Date," or "Weight: 20%" near a date.
 
-### 🧐 The "Check Your Work" Step
+###  The "Check Your Work" Step
 The app isn't perfect. I made sure it shows you the "Confidence Score" (how sure the code is) and the exact sentence it looked at. If the app is confused, it'll flag it so you can check it yourself.
 
 
