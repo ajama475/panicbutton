@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { parsePDF } from "./lib/parser/pdfParser";
+import { parsePDF } from "../../lib/parser/pdfParser";
 
 export default function PanicUpload() {
   const [status, setStatus] = useState<string>("");
@@ -14,15 +14,17 @@ export default function PanicUpload() {
     if (!file) return;
 
     setLoading(true);
-    setStatus("Reading PDF...");
+    setStatus("Reading PDF…");
     setPages(null);
     setText("");
 
     try {
       const result = await parsePDF(file);
       setPages(result.metadata.pages);
-      // Display first 4000 chars to observe formatting/noise
-      setText(result.text.slice(0, 4000)); 
+
+      // Cap at 4000 chars to keep the DOM responsive
+      setText(result.text.slice(0, 4000));
+
       setStatus("Done");
     } catch (err) {
       console.error(err);
@@ -32,9 +34,11 @@ export default function PanicUpload() {
     }
   }
 
+  const isError = status === "Could not read this PDF.";
+
   return (
     <section className="rounded-xl border border-gray-200 bg-gray-50 p-6 dark:border-neutral-800 dark:bg-neutral-900">
-      <h2 className="text-xl font-medium mb-2 text-neutral-800 dark:text-neutral-200">Upload syllabus</h2>
+      <h2 className="text-xl font-medium mb-2">Upload syllabus</h2>
       <p className="mb-4 text-sm text-gray-600 dark:text-neutral-400">
         Stage 1: Raw PDF → text extraction (observation only)
       </p>
@@ -56,11 +60,11 @@ export default function PanicUpload() {
 
       {status && (
         <div className="mt-4 text-sm">
-          <span className={status === "Done" ? "text-green-600" : "text-red-500"}>
+          <span className={isError ? "text-red-500" : "text-green-600"}>
             {status}
           </span>
           {pages !== null && (
-            <span className="text-neutral-500 ml-1"> • {pages} pages detected</span>
+            <span className="text-neutral-500"> • {pages} pages detected</span>
           )}
         </div>
       )}
