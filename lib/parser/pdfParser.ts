@@ -1,6 +1,7 @@
 import * as pdfjs from "pdfjs-dist";
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+const PDFJS_VERSION = '3.11.174'; 
+pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}/pdf.worker.min.js`;
 
 export interface ParseResult {
   text: string;
@@ -10,30 +11,33 @@ export interface ParseResult {
 }
 
 export async function parsePDF(file: File): Promise<ParseResult> {
-  const arrayBuffer = await file.arrayBuffer();
-  
-  const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
-  const pdf = await loadingTask.promise;
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const loadingTask = pdfjs.getDocument({ 
+      data: arrayBuffer,
+      useWorkerFetch: true, 
+      isEvalSupported: false 
+    });
+    
+    const pdf = await loadingTask.promise;
+    let fullText = "";
 
-  let fullText = "";
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items
+        .map((item: any) => item.str || "")
+        .join(" ");
+      fullText += pageText + "\n";
+    }
 
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i);
-    const textContent = await page.getTextContent();
-
-    // Extract text items and join them
-    const pageText = textContent.items
-      .map((item: any) => ("str" in item ? item.str : ""))
-      .join(" ");
-
-    fullText += pageText + "\n";
+    return {
+      text: fullText,
+      metadata: { pages: pdf.numPages },
+    };
+  } catch (error) {
+    console.error("PDF Parsing Error:", error);
+    throw error; 
   }
-
-  return {
-    text: fullText,
-    metadata: {
-      pages: pdf.numPages,
-    },
-  };
 }
 
