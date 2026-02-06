@@ -46,6 +46,11 @@ The app isn't perfect. I made sure it shows you the "Confidence Score" (how sure
 * **Status:** Still working on the PDF text picker and the date rules.
 * **Tech:** Built with React (Frontend) and some Python scripts for the date-finding logic.
 
+## Project Structure
+* `frontend/`: The Next.js application (React, Tailwind, PDF.js).
+* `backend/`: Placeholder for future backend logic.
+* `docs/`: Documentation and project tracking files.
+
 
 
 ## Why am I doing this?
