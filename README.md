@@ -15,10 +15,10 @@ You give it a syllabus PDF, and it tries to find the deadlines for you.
 1. **Upload:** Drop your PDF in.
 2. **Check:** The app shows you the dates it found and where it found them in the text.
 3. **Fix:** If it got a date wrong or missed something, you can fix it manually.
-4. **Export:** It gives you a `.ics` file that you can drag into Google Calendar or Outlook.
+4. **Export:** It gives you a `.ics` file that you can drag into Google Calendar.
 
 ## What it DOESN'T do
-* It’s not an official U of A tool. Always check your eClass for the real dates.
+* It’s not an official U of A tool. Always check your canvas for the real dates.
 * It doesn't save your files. Everything happens in your browser for privacy.
 * It's not a "smart" bot that does your homework, it just reads dates.
 
