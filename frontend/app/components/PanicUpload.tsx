@@ -1,4 +1,3 @@
-// app/components/PanicUpload.tsx
 "use client";
 
 import { useMemo, useState } from "react";
@@ -190,10 +189,12 @@ export default function PanicUpload() {
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            <Badge tone="neutral">1) Upload</Badge>
-            <Badge tone="neutral">2) Review</Badge>
-            <Badge tone="neutral">3) Export</Badge>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge tone="neutral">1 · Upload</Badge>
+              <span className="text-neutral-400">→</span>
+              <Badge tone="neutral">2 · Review</Badge>
+              <span className="text-neutral-400">→</span>
+              <Badge tone="neutral">3 · Export</Badge>
           </div>
         </div>
 
