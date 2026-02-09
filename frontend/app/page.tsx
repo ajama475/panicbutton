@@ -1,71 +1,71 @@
 import dynamic from "next/dynamic";
+import { Sparkles, Shield, Rocket } from "lucide-react";
 
 const PanicUpload = dynamic(() => import("./components/PanicUpload"), {
   ssr: false,
   loading: () => (
-    <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
-      <div className="animate-pulse space-y-3">
-        <div className="h-4 w-40 rounded bg-neutral-200 dark:bg-neutral-800" />
-        <div className="h-10 w-full rounded bg-neutral-200 dark:bg-neutral-800" />
-        <div className="h-24 w-full rounded bg-neutral-200 dark:bg-neutral-800" />
-      </div>
+    <div className="grid md:grid-cols-3 gap-4 animate-pulse">
+      <div className="md:col-span-2 h-[300px] bg-white/5 rounded-3xl" />
+      <div className="md:col-span-1 h-[300px] bg-white/5 rounded-3xl" />
+      <div className="md:col-span-2 h-[600px] bg-white/5 rounded-3xl" />
+      <div className="md:col-span-1 h-[300px] bg-white/5 rounded-3xl" />
     </div>
   ),
 });
 
-function Pill({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="inline-flex items-center rounded-full border border-neutral-200 bg-white px-3 py-1 text-xs text-neutral-700 shadow-sm dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200">
-      {children}
-    </span>
-  );
-}
-
 export default function Home() {
   return (
-    <main className="min-h-screen relative">
-      {/* Background layers */}
-      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-neutral-50 to-white dark:from-neutral-950 dark:to-neutral-950" />
-      <div className="absolute inset-0 -z-10 bg-[radial-gradient(60%_50%_at_50%_0%,rgba(59,130,246,0.12),transparent_60%)]" />
+    <main className="min-h-screen bg-background text-foreground selection:bg-accent/30">
+      {/* Dynamic Background */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/20 blur-[130px] rounded-full" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-accent/10 blur-[120px] rounded-full" />
+      </div>
 
-      <div className="mx-auto max-w-3xl px-4 py-10 sm:py-14">
-        {/* Header */}
-        <header className="mb-6 sm:mb-8">
-          <div className="flex flex-wrap items-center gap-2">
-            <Pill>Beta</Pill>
+      <div className="relative mx-auto max-w-7xl px-6 py-12 md:py-20 lg:px-8">
+        {/* Header Section */}
+        <header className="mb-16 text-center space-y-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-accent text-xs font-bold uppercase tracking-widest animate-in fade-in slide-in-from-top-4 duration-500">
+            <Sparkles className="w-3 h-3" />
+            Do it yourself
           </div>
 
-          <h1 className="mt-5 text-3xl font-semibold tracking-tight sm:text-4xl">
-            PanicButton
-          </h1>
+          <div className="space-y-4">
+            <h1 className="text-6xl md:text-8xl font-black tracking-tighter text-white drop-shadow-2xl">
+              Panic<span className="text-accent underline decoration-primary decoration-8">Button</span>
+            </h1>
+            <p className="max-w-2xl mx-auto text-lg md:text-xl text-muted-foreground font-medium leading-relaxed">
+              Tailored for excellence. Turn your syllabus into a high-octane
+              Green & Gold productivity strategy.
+            </p>
+          </div>
 
-          <p className="mt-3 text-base text-neutral-600 dark:text-neutral-300">
-            Upload a syllabus PDF, quickly verify the deadlines, then export them to your calendar.
-          </p>
-
-          <div className="mt-4 rounded-2xl border border-neutral-200 bg-white p-4 text-sm text-neutral-700 shadow-sm dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200">
-            <div className="flex flex-col gap-1">
-              <div>
-                <span className="font-medium">How it works:</span>{" "}
-                PDF → extracted dates → you review → calendar export.
-              </div>
-              <div className="text-neutral-500 dark:text-neutral-400">
-                Always verify official dates in Canvas/BearTracks.
-              </div>
+          <div className="flex flex-wrap items-center justify-center gap-8 pt-4">
+            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+              <Shield className="w-4 h-4 text-accent" />
+              LOCAL-ONLY PROCESSING
+            </div>
+            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+              <Rocket className="w-4 h-4 text-accent" />
+              INSTANT EXTRACTION
             </div>
           </div>
         </header>
 
-        {/* Main card */}
-        <div className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-900 sm:p-6">
+        {/* Bento Grid Application */}
+        <div className="animate-in fade-in zoom-in-95 duration-700 delay-200 fill-mode-both">
           <PanicUpload />
         </div>
 
         {/* Footer */}
-        <footer className="mt-6 text-xs text-neutral-500 dark:text-neutral-400">
-          <div className="flex flex-col gap-1">
-            <div>Privacy: your PDF stays on your device (no file storage server-side).</div>
-            <div>Built for speed and clarity — not as an official source of truth.</div>
+        <footer className="mt-20 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 text-[10px] font-bold uppercase tracking-widest text-slate-600">
+          <div className="flex gap-8">
+            <span>Privacy: Client-Side Only</span>
+            <span> Security: No Cloud Storage</span>
+          </div>
+          <div className="flex gap-4">
+            <span className="text-slate-400">PanicButton &copy; 2026</span>
+            <span className="text-blue-500/50"> Built for Excellence</span>
           </div>
         </footer>
       </div>
