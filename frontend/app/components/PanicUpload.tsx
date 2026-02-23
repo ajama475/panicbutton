@@ -294,9 +294,11 @@ export default function PanicUpload() {
               Upload your syllabus and we will quietly surface likely deadlines for review.
               You stay in control before exporting anything.
             </p>
-            <p className="mt-3 text-3xl text-zinc-400" style={{ marginTop: 12, color: "#8fa3bd", fontSize: 28 }}>
-              {loading ? "Reading PDF..." : status || "Upload a PDF to get started"}
-            </p>
+            {(loading || status) && (
+              <p className="mt-3 text-3xl text-zinc-400" style={{ marginTop: 12, color: "#8fa3bd", fontSize: 28 }}>
+                {loading ? "Reading PDF..." : status}
+              </p>
+            )}
           </div>
         ) : (
           <div className="space-y-4">
