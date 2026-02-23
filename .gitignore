@@ -5,6 +5,9 @@ node_modules/
 .next/
 out/
 
+# typescript
+*.tsbuildinfo
+
 # env files
 .env
 .env.local
@@ -18,3 +21,7 @@ pnpm-debug.log*
 
 # macOS
 .DS_Store
+
+# local automation/browser artifacts
+.playwright-cli/
+output/playwright/

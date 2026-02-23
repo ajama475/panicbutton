@@ -3,47 +3,47 @@
 @tailwind utilities;
 
 :root {
-  --background: 152 100% 4%;
-  --foreground: 51 100% 95%;
-  --muted: 152 100% 8%;
-  --muted-foreground: 152 20% 60%;
-  --accent: 51 100% 51%;
-  --accent-foreground: 152 100% 10%;
-  --popover: 152 100% 4%;
-  --popover-foreground: 51 100% 90%;
-  --border: 152 50% 15%;
-  --input: 152 50% 15%;
-  --card: 152 100% 3%;
-  --card-foreground: 51 100% 95%;
-  --primary: 152 100% 24%;
-  --primary-foreground: 51 100% 51%;
-  --secondary: 152 60% 12%;
-  --secondary-foreground: 51 100% 70%;
-  --destructive: 0 63% 31%;
-  --destructive-foreground: 210 40% 98%;
-  --ring: 51 100% 51%;
+  --background: 240 10% 3.9%;
+  --foreground: 0 0% 98%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --accent: 217 91% 60%;
+  --accent-foreground: 0 0% 98%;
+  --popover: 240 10% 3.9%;
+  --popover-foreground: 0 0% 98%;
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  --card: 240 10% 3.9%;
+  --card-foreground: 0 0% 98%;
+  --primary: 217 91% 60%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 240 3.7% 15.9%;
+  --secondary-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 40%;
+  --destructive-foreground: 0 0% 98%;
+  --ring: 217 91% 60%;
 }
 
 .dark {
-  --background: 152 100% 4%;
-  --foreground: 51 100% 95%;
-  --muted: 152 100% 8%;
-  --muted-foreground: 152 20% 60%;
-  --accent: 51 100% 51%;
-  --accent-foreground: 152 100% 10%;
-  --popover: 152 100% 4%;
-  --popover-foreground: 51 100% 90%;
-  --border: 152 50% 15%;
-  --input: 152 50% 15%;
-  --card: 152 100% 3%;
-  --card-foreground: 51 100% 95%;
-  --primary: 152 100% 24%;
-  --primary-foreground: 51 100% 51%;
-  --secondary: 152 60% 12%;
-  --secondary-foreground: 51 100% 70%;
-  --destructive: 0 63% 31%;
-  --destructive-foreground: 210 40% 98%;
-  --ring: 51 100% 51%;
+  --background: 240 10% 3.9%;
+  --foreground: 0 0% 98%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --accent: 217 91% 60%;
+  --accent-foreground: 0 0% 98%;
+  --popover: 240 10% 3.9%;
+  --popover-foreground: 0 0% 98%;
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  --card: 240 10% 3.9%;
+  --card-foreground: 0 0% 98%;
+  --primary: 217 91% 60%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 240 3.7% 15.9%;
+  --secondary-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 40%;
+  --destructive-foreground: 0 0% 98%;
+  --ring: 217 91% 60%;
 }
 
 @layer base {
@@ -58,14 +58,13 @@
 }
 
 .bento-card {
-  @apply relative overflow-hidden rounded-3xl border bg-card p-6 shadow-sm transition-all hover:shadow-md;
-  background-image: radial-gradient(at top left, hsla(152, 100%, 24%, 0.1), transparent);
+  @apply relative overflow-hidden rounded-2xl border bg-card p-6 shadow-sm transition-all hover:shadow-md;
 }
 
 .glass {
-  @apply bg-white/5 backdrop-blur-md border border-white/10;
+  @apply bg-card border border-border/90;
 }
 
 .upload-zone-active {
-  @apply border-accent bg-accent/5 ring-4 ring-accent/10;
+  @apply border-foreground/40 bg-muted/70 ring-2 ring-foreground/10;
 }

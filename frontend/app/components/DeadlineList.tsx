@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-import { Calendar, Clock, AlertTriangle, CheckCircle2, MoreHorizontal, MousePointer2 } from "lucide-react";
+import React, { useMemo, useState } from "react";
+import { ArrowUpDown, Calendar, MousePointer2, Search } from "lucide-react";
 import { DeadlineCandidate } from "@/lib/extract/models";
 import { cn } from "@/lib/utils";
 
@@ -20,38 +20,77 @@ export const DeadlineList = ({
     onAdd,
     className,
 }: DeadlineListProps) => {
+    const [search, setSearch] = useState("");
+    const [sort, setSort] = useState<"date-asc" | "date-desc" | "confidence-asc" | "confidence-desc">("date-asc");
+
+    const visibleCandidates = useMemo(() => {
+        const q = search.trim().toLowerCase();
+        const filtered = !q
+            ? candidates
+            : candidates.filter((c) =>
+                [c.title, c.dateISO, c.type].filter(Boolean).join(" ").toLowerCase().includes(q)
+            );
+
+        const sorted = [...filtered];
+        sorted.sort((a, b) => {
+            if (sort === "confidence-asc") return a.confidence - b.confidence;
+            if (sort === "confidence-desc") return b.confidence - a.confidence;
+            if (sort === "date-desc") return b.dateISO.localeCompare(a.dateISO);
+            return a.dateISO.localeCompare(b.dateISO);
+        });
+        return sorted;
+    }, [candidates, search, sort]);
+
     return (
-        <div className={cn("flex flex-col h-full", className)}>
-            <div className="flex items-center justify-between mb-6">
-                <h3 className="text-sm font-black uppercase tracking-[0.2em] text-accent flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    Extraction Grid
+        <div className={cn("flex h-full flex-col", className)}>
+            <div className="mb-4 flex items-center justify-between">
+                <h3 className="flex items-center gap-2 text-sm font-semibold text-zinc-100">
+                    <Calendar className="h-4 w-4" />
+                    Extracted deadlines
                 </h3>
                 <button
                     onClick={onAdd}
-                    className="text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-full bg-accent text-accent-foreground hover:scale-105 transition-transform"
+                    className="rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs text-zinc-200 transition-colors hover:bg-zinc-700"
                 >
                     + Manual Entry
                 </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto pr-2 scrollbar-none">
-                {candidates.length === 0 ? (
-                    <div className="h-40 flex flex-col items-center justify-center text-center space-y-2 text-muted-foreground bg-muted/30 rounded-3xl border border-dashed border-border">
-                        <MousePointer2 className="w-8 h-8 opacity-20" />
-                        <p className="text-xs font-medium uppercase tracking-widest">No candidates available</p>
+            <div className="mb-4 grid gap-2 md:grid-cols-2">
+                <label className="flex items-center gap-2 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs text-zinc-400">
+                    <Search className="h-3.5 w-3.5" />
+                    <input
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Search deadlines..."
+                        className="w-full bg-transparent text-zinc-200 placeholder:text-zinc-500 outline-none"
+                    />
+                </label>
+                <label className="flex items-center gap-2 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs text-zinc-400">
+                    <ArrowUpDown className="h-3.5 w-3.5" />
+                    <select
+                        value={sort}
+                        onChange={(e) => setSort(e.target.value as "date-asc" | "date-desc" | "confidence-asc" | "confidence-desc")}
+                        className="w-full bg-transparent text-zinc-200 outline-none"
+                    >
+                        <option value="date-asc" className="bg-zinc-900">Date (earliest)</option>
+                        <option value="date-desc" className="bg-zinc-900">Date (latest)</option>
+                        <option value="confidence-desc" className="bg-zinc-900">Confidence (high)</option>
+                        <option value="confidence-asc" className="bg-zinc-900">Confidence (low)</option>
+                    </select>
+                </label>
+            </div>
+
+            <div className="flex-1 overflow-y-auto pr-1">
+                {visibleCandidates.length === 0 ? (
+                    <div className="flex h-40 flex-col items-center justify-center space-y-2 rounded-lg border border-dashed border-zinc-700 bg-zinc-900/60 text-center text-zinc-500">
+                        <MousePointer2 className="h-8 w-8 opacity-20" />
+                        <p className="text-xs">No candidates available</p>
                     </div>
                 ) : (
-                    <div className="space-y-1">
-                        {/* Table Header */}
-                        <div className="grid grid-cols-12 gap-4 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground border-b border-border mb-2">
-                            <div className="col-span-6">Assignment / Event</div>
-                            <div className="col-span-3 text-center">Date</div>
-                            <div className="col-span-3 text-right">Match</div>
-                        </div>
-
-                        {candidates.map((c) => (
-                            <DeadlineRow
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                        {visibleCandidates.map((c) => (
+                            <DeadlineCard
                                 key={c.id}
                                 candidate={c}
                                 isActive={c.id === selectedId}
@@ -65,40 +104,37 @@ export const DeadlineList = ({
     );
 };
 
-interface DeadlineRowProps {
+interface DeadlineCardProps {
     candidate: DeadlineCandidate;
     isActive: boolean;
     onClick: () => void;
 }
 
-const DeadlineRow = ({ candidate: c, isActive, onClick }: DeadlineRowProps) => {
+const DeadlineCard = ({ candidate: c, isActive, onClick }: DeadlineCardProps) => {
     return (
         <button
             onClick={onClick}
             className={cn(
-                "w-full grid grid-cols-12 gap-4 items-center px-4 py-3 rounded-xl transition-all duration-200 border border-transparent",
+                "w-full rounded-lg border p-4 text-left transition-colors",
                 isActive
-                    ? "bg-accent/10 border-accent/20 translate-x-1"
-                    : "hover:bg-white/5 hover:border-white/5"
+                    ? "border-blue-500/40 bg-zinc-800"
+                    : "border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800/70"
             )}
         >
-            <div className="col-span-6 flex items-center gap-3 min-w-0">
+            <div className="mb-3 flex items-center gap-2">
                 <div className={cn(
-                    "w-2 h-2 rounded-full shrink-0",
-                    isActive ? "bg-accent animate-pulse" : "bg-muted-foreground/30"
+                    "h-2 w-2 rounded-full shrink-0",
+                    isActive ? "bg-blue-400" : "bg-zinc-500"
                 )} />
-                <span className="text-sm font-bold truncate tracking-tight text-foreground uppercase">
+                <span className="truncate text-sm font-medium text-zinc-100">
                     {c.title || "Untitled"}
                 </span>
             </div>
-
-            <div className="col-span-3 text-center">
-                <span className="text-xs font-medium text-accent font-mono">
-                    {c.dateISO}
-                </span>
+            <div className="space-y-2">
+                <div className="text-[11px] text-zinc-500">Date</div>
+                <div className="font-mono text-xs text-zinc-200">{c.dateISO}</div>
             </div>
-
-            <div className="col-span-3 text-right">
+            <div className="mt-3 flex justify-end">
                 <ConfidenceIndicator confidence={c.confidence} />
             </div>
         </button>
@@ -106,11 +142,11 @@ const DeadlineRow = ({ candidate: c, isActive, onClick }: DeadlineRowProps) => {
 };
 
 const ConfidenceIndicator = ({ confidence }: { confidence: number }) => {
-    const color = confidence >= 80 ? "text-green-500" : confidence >= 50 ? "text-accent" : "text-destructive";
+    const color = confidence >= 80 ? "text-green-400" : confidence >= 50 ? "text-zinc-200" : "text-red-400";
     return (
-        <div className={cn("inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-black/20 border border-white/5", color)}>
-            <div className={cn("w-1 h-1 rounded-full bg-current")} />
-            <span className="text-[10px] font-black">{confidence}%</span>
+        <div className={cn("inline-flex items-center gap-1.5 rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1", color)}>
+            <div className="h-1 w-1 rounded-full bg-current" />
+            <span className="text-[10px] font-semibold">{confidence}% match</span>
         </div>
     );
 };

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Upload, FileText, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { Upload, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface UploadCardProps {
@@ -32,7 +32,7 @@ export const UploadCard = ({
     return (
         <div
             className={cn(
-                "bento-card group flex flex-col justify-center items-center text-center space-y-4 min-h-[300px]",
+                "group flex min-h-[300px] flex-col items-center justify-center space-y-4 rounded-xl border border-zinc-800 bg-zinc-900/40 p-6 text-center",
                 isDragActive && "upload-zone-active",
                 className
             )}
@@ -51,23 +51,22 @@ export const UploadCard = ({
             }}
         >
             <div className="relative">
-                <div className="absolute -inset-4 rounded-full bg-accent/10 opacity-0 group-hover:opacity-100 transition-opacity blur-2xl" />
                 {loading ? (
-                    <Loader2 className="w-12 h-12 text-accent animate-spin relative" />
+                    <Loader2 className="relative h-10 w-10 animate-spin text-blue-400" />
                 ) : isDone ? (
-                    <CheckCircle2 className="w-12 h-12 text-green-500 relative transition-transform group-hover:scale-110" />
+                    <CheckCircle2 className="relative h-10 w-10 text-green-400" />
                 ) : isError ? (
-                    <AlertCircle className="w-12 h-12 text-destructive relative transition-transform group-hover:grow" />
+                    <AlertCircle className="relative h-10 w-10 text-red-400" />
                 ) : (
-                    <Upload className="w-12 h-12 text-accent relative transition-transform group-hover:-translate-y-1" />
+                    <Upload className="relative h-10 w-10 text-zinc-200" />
                 )}
             </div>
 
             <div className="space-y-2">
-                <h3 className="text-xl font-semibold tracking-tight">
+                <h3 className="text-xl font-semibold tracking-tight text-zinc-100">
                     {loading ? "Analyzing Syllabus..." : isDone ? "Extraction Ready" : "Upload Syllabus"}
                 </h3>
-                <p className="text-sm text-muted-foreground max-w-[200px]">
+                <p className="max-w-[240px] text-sm text-zinc-400">
                     {loading
                         ? "We're identifying dates and deadlines using AI."
                         : isError
@@ -78,7 +77,7 @@ export const UploadCard = ({
 
             <div className="pt-2">
                 <label className="relative">
-                    <span className="cursor-pointer inline-flex h-10 items-center justify-center rounded-full bg-accent px-6 text-sm font-medium text-white shadow-lg shadow-accent/20 transition-all hover:bg-accent/90 hover:shadow-accent/40 active:scale-95">
+                    <span className="inline-flex h-10 cursor-pointer items-center justify-center rounded-md bg-zinc-800 px-6 text-sm font-medium text-zinc-200 transition-colors hover:bg-zinc-700">
                         Choose File
                     </span>
                     <input
@@ -92,13 +91,13 @@ export const UploadCard = ({
             </div>
 
             {status && (
-                <div className="flex items-center gap-2 text-xs font-medium animate-in fade-in slide-in-from-bottom-2">
+                <div className="flex items-center gap-2 text-xs font-medium">
                     <span className={cn(
                         "h-2 w-2 rounded-full",
-                        isDone ? "bg-green-500" : isError ? "bg-destructive" : "bg-accent animate-pulse"
+                        isDone ? "bg-green-400" : isError ? "bg-red-400" : "bg-blue-400"
                     )} />
-                    <span className="text-muted-foreground uppercase tracking-wider">{status}</span>
-                    {pages !== null && <span className="text-muted-foreground/50 truncate">• {pages} PAGES</span>}
+                    <span className="text-zinc-400">{status}</span>
+                    {pages !== null && <span className="truncate text-zinc-500">• {pages} pages</span>}
                 </div>
             )}
         </div>
