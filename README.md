@@ -1,3 +1,4 @@
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 # PanicButton
 
 **Find your deadlines from a syllabus — fast.**
