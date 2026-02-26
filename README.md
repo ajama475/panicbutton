@@ -1,5 +1,5 @@
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
-# PanicButton
+# PanicButton(working progress)
 
 **Find your deadlines from a syllabus fast.**
 
