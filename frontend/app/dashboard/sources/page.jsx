@@ -161,6 +161,8 @@ export default function PremiumSyllabusLab() {
   const [isDragging, setIsDragging] = useState(false);
   const [courses, setCourses] = useState([]);
   const [semester, setSemester] = useState({});
+  const [notice, setNotice] = useState("");
+  const [isLoadingLibrary, setIsLoadingLibrary] = useState(true);
   const fileInputRef = useRef(null);
   const dragCounter = useRef(0);
 
@@ -176,10 +178,13 @@ export default function PremiumSyllabusLab() {
       setCourses([]);
       setSemester({});
     }
-    listSyllabusRecords().then(recs => setFiles(recs.map(r => ({
-      ...r,
-      taskCount: r.reviewItems?.filter(i => i.status === "pending").length ?? 0
-    }))));
+    listSyllabusRecords()
+      .then(recs => setFiles(recs.map(r => ({
+        ...r,
+        taskCount: r.reviewItems?.filter(i => i.status === "pending").length ?? 0
+      }))))
+      .catch(() => setNotice("Your syllabus library could not be opened. Check this browser's storage permissions and reload."))
+      .finally(() => setIsLoadingLibrary(false));
   }, []);
 
   const stats = useMemo(() => ({
@@ -188,9 +193,18 @@ export default function PremiumSyllabusLab() {
   }), [files]);
 
   const addFiles = async (fileList) => {
-    const accepted = Array.from(fileList || []).filter(isPdfFile);
+    const selected = Array.from(fileList || []);
+    const accepted = selected.filter(isPdfFile);
+    setNotice("");
+    if (selected.length > 0 && accepted.length === 0) {
+      setNotice("Choose a PDF file. Other file types are not supported.");
+      return;
+    }
     const slotsRemaining = Math.max(0, MAX_DOCUMENTS - files.length);
     const nextFiles = accepted.slice(0, slotsRemaining);
+    if (accepted.length > slotsRemaining) {
+      setNotice(`You can store up to ${MAX_DOCUMENTS} syllabi on this device.`);
+    }
     let projectedStoredBytes = totalStoredSyllabusBytes(files);
 
     for (const file of nextFiles) {
@@ -271,8 +285,13 @@ export default function PremiumSyllabusLab() {
   };
 
   const handleRemove = async (id) => {
-    setFiles(prev => prev.filter(f => f.id !== id));
-    await deleteSyllabusRecord(id);
+    setNotice("");
+    try {
+      await deleteSyllabusRecord(id);
+      setFiles(prev => prev.filter(f => f.id !== id));
+    } catch {
+      setNotice("That syllabus could not be removed. Reload and try again.");
+    }
   };
 
   const handleCourseMap = async (fileId, courseId) => {
@@ -322,8 +341,21 @@ export default function PremiumSyllabusLab() {
           <p className="lab-portal__hint">The local parser looks for dates and assignment language. You approve everything before it reaches Task Ledger.</p>
         </div>
         <div className="lab-portal__shimmer" />
-        <input ref={fileInputRef} type="file" accept=".pdf" multiple style={{ display: "none" }} onChange={(e) => addFiles(e.target.files)} />
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="application/pdf,.pdf"
+          multiple
+          style={{ display: "none" }}
+          aria-label="Choose syllabus PDF files"
+          onChange={(e) => {
+            addFiles(e.target.files);
+            e.target.value = "";
+          }}
+        />
       </div>
+
+      {notice && <div className="lab-notice" role="alert">{notice}</div>}
 
       <section className="lab-inventory">
         <div className="lab-section-title">
@@ -331,7 +363,9 @@ export default function PremiumSyllabusLab() {
           <h3>Syllabus Library</h3>
         </div>
 
-        {files.length === 0 ? (
+        {isLoadingLibrary ? (
+          <div className="lab-empty" aria-live="polite"><p>Opening your local syllabus library…</p></div>
+        ) : files.length === 0 ? (
           <div className="lab-empty">
             <p>No syllabi uploaded yet.</p>
           </div>
@@ -359,6 +393,7 @@ export default function PremiumSyllabusLab() {
                         className="lab-card__select"
                         value={file.courseId || ""}
                         onChange={(e) => handleCourseMap(file.id, e.target.value)}
+                        aria-label={`Course for ${file.name}`}
                       >
                         <option value="">Map to course...</option>
                         {courses.map(c => <option key={c.id} value={c.id}>{c.code || c.name}</option>)}

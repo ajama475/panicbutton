@@ -46,7 +46,7 @@ function isSetupComplete() {
 const steps = [
   { key: "dates", label: "Dates" },
   { key: "courses", label: "Courses" },
-  { key: "sync", label: "Sync" },
+  { key: "ready", label: "Ready" },
 ];
 
 function BrandIcon() {
@@ -68,19 +68,24 @@ function CheckIcon() {
   );
 }
 
-function Field({ label, type = "text", value, placeholder, onChange, name, error }) {
+function Field({ id, label, type = "text", value, placeholder, onChange, name, error, autoComplete = "off" }) {
+  const errorId = `${id}-error`;
   return (
-    <label className="field">
+    <label className="field" htmlFor={id}>
       <span className="field__label">{label}</span>
       <input
+        id={id}
         className={`field__input${error ? " field__input--error" : ""}`}
         type={type}
         value={value}
         name={name}
         placeholder={placeholder}
         onChange={onChange}
+        autoComplete={autoComplete}
+        aria-invalid={error ? "true" : undefined}
+        aria-describedby={error ? errorId : undefined}
       />
-      {error && <span className="field__error">{error}</span>}
+      {error && <span className="field__error" id={errorId}>{error}</span>}
     </label>
   );
 }
@@ -89,6 +94,7 @@ function CourseRow({ id, code, name, onChange, onRemove }) {
   return (
     <div className="course-row">
       <Field
+        id={`course-code-${id}`}
         label="Code"
         value={code}
         name="code"
@@ -96,6 +102,7 @@ function CourseRow({ id, code, name, onChange, onRemove }) {
         onChange={(e) => onChange(id, "code", e.target.value)}
       />
       <Field
+        id={`course-name-${id}`}
         label="Course name"
         value={name}
         name="name"
@@ -120,13 +127,18 @@ export default function SemesterSetupClient() {
   const [hydrated, setHydrated] = useState(false);
   const [theme, setTheme] = useState("dark");
   const [semesterDates, setSemesterDates] = useState({ startDate: "", endDate: "" });
-  const [courses, setCourses] = useState([]);
+  const [courses, setCourses] = useState([{ id: "course-1", code: "", name: "" }]);
   const [validationErrors, setValidationErrors] = useState({});
   const [attempted, setAttempted] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [storageError, setStorageError] = useState("");
 
   useEffect(() => {
-    // If setup is already complete, redirect immediately — don't show setup again
-    if (isSetupComplete()) {
+    const editing = new URLSearchParams(window.location.search).get("edit") === "1";
+    setEditMode(editing);
+
+    // If setup is already complete, redirect immediately unless the student is editing it.
+    if (isSetupComplete() && !editing) {
       router.replace("/dashboard");
       return;
     }
@@ -148,6 +160,16 @@ export default function SemesterSetupClient() {
     setHydrated(true);
   }, [router]);
 
+  useEffect(() => {
+    if (!hydrated || editMode) return;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ semesterDates, courses }));
+      setStorageError("");
+    } catch {
+      setStorageError("This browser could not save your draft. Check your privacy or storage settings before continuing.");
+    }
+  }, [courses, editMode, hydrated, semesterDates]);
+
   function toggleTheme() {
     const next = theme === "dark" ? "light" : "dark";
     setTheme(next);
@@ -160,7 +182,7 @@ export default function SemesterSetupClient() {
   }
 
   const hasDates = semesterDates.startDate !== "" && semesterDates.endDate !== "";
-  const hasValidCourses = courses.some((c) => c.code.trim() !== "" || c.name.trim() !== "");
+  const hasValidCourses = courses.some((c) => (c.code || "").trim() !== "" || (c.name || "").trim() !== "");
 
   const activeStep = useMemo(() => {
     if (!hasDates) return 0;
@@ -193,22 +215,37 @@ export default function SemesterSetupClient() {
   }
 
   function handleAddCourse() {
-    setCourses((prev) => [...prev, { id: `course-${Date.now()}`, code: "", name: "" }]);
+    const id = typeof crypto !== "undefined" && crypto.randomUUID
+      ? `course-${crypto.randomUUID()}`
+      : `course-${Date.now()}`;
+    setCourses((prev) => [...prev, { id, code: "", name: "" }]);
   }
 
   function handleRemoveCourse(id) {
     setCourses((prev) => prev.filter((c) => c.id !== id));
   }
 
-  function handleContinue() {
+  function handleContinue(event) {
+    event?.preventDefault();
     setAttempted(true);
     const errors = validate();
     setValidationErrors(errors);
     if (Object.keys(errors).length > 0) return;
 
-    const payload = { semesterDates, courses };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-    router.push("/dashboard");
+    const cleanCourses = courses
+      .map((course) => ({
+        ...course,
+        code: (course.code || "").trim(),
+        name: (course.name || "").trim(),
+      }))
+      .filter((course) => course.code || course.name);
+
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ semesterDates, courses: cleanCourses }));
+      router.replace("/dashboard");
+    } catch {
+      setStorageError("We could not save your semester. Check your browser storage settings and try again.");
+    }
   }
 
   // Don't render full setup until hydration check is done
@@ -262,15 +299,17 @@ export default function SemesterSetupClient() {
           ))}
         </div>
 
-        <h1 className="setup-heading">Set up your semester</h1>
+        <h1 className="setup-heading">{editMode ? "Edit your semester" : "Set up your semester"}</h1>
         <p className="setup-subheading">
-          Your semester dates and courses anchor everything. We use them to organize
-          your deadlines and show you what matters each week.
+          {editMode
+            ? "Keep your dates and course list current. Existing tasks and syllabi stay in place."
+            : "Add your dates and courses once. They anchor every deadline, forecast, and weekly plan."}
         </p>
 
-        <form className="setup-form" onSubmit={(e) => e.preventDefault()}>
+        <form className="setup-form" onSubmit={handleContinue} noValidate>
           <div className="setup-form__row">
             <Field
+              id="semester-start"
               label="Semester start"
               type="date"
               name="startDate"
@@ -279,6 +318,7 @@ export default function SemesterSetupClient() {
               error={attempted ? validationErrors.startDate : undefined}
             />
             <Field
+              id="semester-end"
               label="Semester end"
               type="date"
               name="endDate"
@@ -297,7 +337,7 @@ export default function SemesterSetupClient() {
             </div>
 
             {attempted && validationErrors.courses && (
-              <p className="field__error" style={{ marginBottom: 8 }}>{validationErrors.courses}</p>
+              <p className="field__error" role="alert" style={{ marginBottom: 8 }}>{validationErrors.courses}</p>
             )}
 
             <div className="course-list">
@@ -319,17 +359,26 @@ export default function SemesterSetupClient() {
             </div>
           </section>
 
+          <div className="setup-save-note" aria-live="polite">
+            <CheckIcon />
+            <span>{storageError || (editMode
+              ? "Changes apply only when you choose Save changes."
+              : "Saved privately on this device as you type.")}</span>
+          </div>
+
           <div className="setup-actions">
-            <div />
-            <button className="btn-primary" type="button" onClick={handleContinue}>
-              Continue to dashboard
+            {editMode ? (
+              <button className="btn-ghost" type="button" onClick={() => router.replace("/dashboard")}>Cancel</button>
+            ) : <div />}
+            <button className="btn-primary" type="submit">
+              {editMode ? "Save changes" : "Build my dashboard"}
             </button>
           </div>
         </form>
 
         <footer className="setup-footer">
-          <span>Sync Your Semester — see what matters, before it's urgent.</span>
-          <span>Local-first</span>
+          <span>See what matters before it becomes urgent.</span>
+          <span>Your data stays on this device</span>
         </footer>
       </div>
     </main>

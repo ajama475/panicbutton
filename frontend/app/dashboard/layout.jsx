@@ -78,6 +78,15 @@ function IconFocus() {
   );
 }
 
+function IconSettings() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.09A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3v-4h.09A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.09A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.15.4.36.75.6 1 .28.3.66.44 1.1.4h.09v4h-.09a1.7 1.7 0 0 0-1.7.6Z" />
+    </svg>
+  );
+}
+
 function BrandIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -208,6 +217,15 @@ export default function DashboardLayout({ children }) {
     }
   }, [setupValid, router]);
 
+  useEffect(() => {
+    if (!showResetConfirm) return;
+    function handleEscape(event) {
+      if (event.key === "Escape") setShowResetConfirm(false);
+    }
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [showResetConfirm]);
+
   async function handleReset() {
     // 1. Clear localStorage
     localStorage.removeItem("sys-semester-setup");
@@ -269,7 +287,8 @@ export default function DashboardLayout({ children }) {
 
   return (
     <div className={`dashboard${isSidebarCollapsed ? " dashboard--collapsed" : ""}`}>
-      <aside className={`sidebar${isSidebarCollapsed ? " sidebar--collapsed" : ""}`}>
+      <a className="skip-link" href="#main-content">Skip to content</a>
+      <aside className={`sidebar${isSidebarCollapsed ? " sidebar--collapsed" : ""}`} aria-label="Primary navigation">
         <div className="sidebar-header">
           <Link href="/dashboard" className="sidebar-brand">
             <span className="sidebar-brand__icon"><BrandIcon /></span>
@@ -288,7 +307,7 @@ export default function DashboardLayout({ children }) {
         {navSections.map((section) => (
           <div className="sidebar-section" key={section.label}>
             <div className="sidebar-section__label">{section.label}</div>
-            <nav className="sidebar-nav">
+            <nav className="sidebar-nav" aria-label={`${section.label} navigation`}>
               {section.items.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -296,6 +315,7 @@ export default function DashboardLayout({ children }) {
                     key={item.href}
                     href={item.href}
                     className={`sidebar-nav__item${isActive(item.href) ? " sidebar-nav__item--active" : ""}`}
+                    aria-current={isActive(item.href) ? "page" : undefined}
                   >
                     <span className="sidebar-nav__icon"><Icon /></span>
                     {item.label}
@@ -307,6 +327,10 @@ export default function DashboardLayout({ children }) {
         ))}
 
         <div className="sidebar-footer">
+          <Link href="/?edit=1" className="sidebar-nav__item sidebar-edit-button">
+            <span className="sidebar-nav__icon"><IconSettings /></span>
+            Edit semester
+          </Link>
           <button
             className="sidebar-nav__item sidebar-reset-button"
             onClick={() => setShowResetConfirm(true)}
@@ -318,7 +342,7 @@ export default function DashboardLayout({ children }) {
 
       <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
         {/* Top bar */}
-        <div className="topbar">
+        <header className="topbar">
           <div className="topbar__left">
             {isSidebarCollapsed && (
               <button 
@@ -338,6 +362,15 @@ export default function DashboardLayout({ children }) {
           </div>
           <div className="topbar__actions">
             <Link
+              href="/?edit=1"
+              className="topbar__edit-link"
+              aria-label="Edit semester details"
+              title="Edit semester details"
+            >
+              <IconSettings />
+              <span>Edit semester</span>
+            </Link>
+            <Link
               href="/focus"
               className="topbar__calm-link"
               aria-label="Enter Calm Mode"
@@ -355,17 +388,17 @@ export default function DashboardLayout({ children }) {
               {theme === "dark" ? <IconSun /> : <IconMoon />}
             </button>
           </div>
-        </div>
+        </header>
 
-        <section className="main-content">{children}</section>
+        <main className="main-content" id="main-content">{children}</main>
       </div>
 
       {showResetConfirm && (
         <div className="modal-backdrop" onClick={() => setShowResetConfirm(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 400 }}>
+          <div className="modal" role="dialog" aria-modal="true" aria-labelledby="reset-title" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 400 }}>
             <div className="modal__header">
-              <h2 className="modal__title">Reset all data?</h2>
-              <button className="modal__close" onClick={() => setShowResetConfirm(false)}>×</button>
+              <h2 className="modal__title" id="reset-title">Reset all data?</h2>
+              <button className="modal__close" aria-label="Close reset confirmation" onClick={() => setShowResetConfirm(false)}>×</button>
             </div>
             <div className="modal__body">
               <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6, margin: 0 }}>

@@ -1,5 +1,5 @@
-import { listSyllabusRecords, patchSyllabusRecord } from "../storage/syllabusStore";
-import { listTasks, putTask, patchTask, deleteTask } from "../storage/taskStore";
+import { listSyllabusRecords, patchSyllabusRecord } from "../storage/syllabusStore.js";
+import { listTasks, putTask, patchTask, deleteTask } from "../storage/taskStore.js";
 
 const SETUP_STORAGE_KEY = "sys-semester-setup";
 const MAX_RECURRING_OCCURRENCES = 220;

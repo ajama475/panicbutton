@@ -1,12 +1,11 @@
 {
   "name": "Sync Your Semester",
   "short_name": "Semester",
-  "description": "Your premium academic planner.",
-  "start_url": "/dashboard",
+  "description": "A calm, local-first academic planner for deadlines, workload, and weekly focus.",
+  "start_url": "/",
   "display": "standalone",
-  "background_color": "#12141a",
-  "theme_color": "#12141a",
-  "orientation": "portrait-primary",
+  "background_color": "#000000",
+  "theme_color": "#000000",
   "icons": [
     {
       "src": "/icons/icon-192.png",

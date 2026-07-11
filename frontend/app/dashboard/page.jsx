@@ -287,28 +287,35 @@ function QuickAddTask({ onCreated }) {
   const [dueDate, setDueDate] = useState("");
   const [type, setType] = useState("other");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   async function handleSubmit(e) {
     e.preventDefault();
     if (!title.trim() || isSubmitting) return;
 
     setIsSubmitting(true);
-    await createTask({
-      title: title.trim(),
-      dueDate: dueDate || null,
-      type,
-      difficulty: 0,
-    });
-    
-    setTitle("");
-    setDueDate("");
-    setType("other");
-    setIsSubmitting(false);
-    if (onCreated) onCreated();
+    setError("");
+    try {
+      await createTask({
+        title: title.trim(),
+        dueDate: dueDate || null,
+        type,
+        difficulty: 0,
+      });
+
+      setTitle("");
+      setDueDate("");
+      setType("other");
+      if (onCreated) await onCreated();
+    } catch {
+      setError("That task could not be saved. Check your browser storage and try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
-    <form className="quick-add-task" onSubmit={handleSubmit} aria-label="Quick add task">
+    <form className={`quick-add-task${error ? " quick-add-task--error" : ""}`} onSubmit={handleSubmit} aria-label="Quick add task">
       <div className="quick-add-task__input-wrapper">
         <svg className="quick-add-task__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <line x1="12" y1="5" x2="12" y2="19" />
@@ -346,6 +353,7 @@ function QuickAddTask({ onCreated }) {
       <button type="submit" className="quick-add-task__submit" disabled={!title.trim() || isSubmitting}>
         {isSubmitting ? "Adding…" : "Add"}
       </button>
+      {error && <p className="quick-add-task__error" role="alert">{error}</p>}
     </form>
   );
 }
@@ -414,16 +422,23 @@ export default function WhatMattersPage() {
   const [tasks, setTasks] = useState([]);
   const [parentTasks, setParentTasks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const { semester } = useMemo(() => readSetup(), []);
 
   const loadTasks = useCallback(async () => {
-    const [allData, parentData] = await Promise.all([
-      getAllSemesterTasks(),
-      getParentTasks(),
-    ]);
-    setTasks(allData);
-    setParentTasks(parentData);
-    setLoading(false);
+    setLoadError("");
+    try {
+      const [allData, parentData] = await Promise.all([
+        getAllSemesterTasks(),
+        getParentTasks(),
+      ]);
+      setTasks(allData);
+      setParentTasks(parentData);
+    } catch {
+      setLoadError("Your local semester data could not be opened. Reload the page or check this browser's storage permissions.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { loadTasks(); }, [loadTasks]);
@@ -451,6 +466,17 @@ export default function WhatMattersPage() {
     );
   }
 
+  if (loadError) {
+    return (
+      <div className="page-state" role="alert">
+        <div className="page-state__icon">!</div>
+        <h1>We could not open your plan</h1>
+        <p>{loadError}</p>
+        <button className="btn-primary" type="button" onClick={() => { setLoading(true); loadTasks(); }}>Try again</button>
+      </div>
+    );
+  }
+
   if (tasks.length === 0) {
     return (
       <>
@@ -468,16 +494,17 @@ export default function WhatMattersPage() {
                 <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
               </svg>
             </div>
-            <h2 className="empty-state__title">Welcome to Sync Your Semester</h2>
+            <h2 className="empty-state__title">Your semester is ready</h2>
             <p className="empty-state__copy">
-              Your workspace is currently empty. To get the most out of the platform, drop your course syllabus PDFs into the Syllabus Lab to automatically map out your deadlines and tasks.
+              Add your first task now, or upload a syllabus to extract several deadlines at once. Nothing is added without your review.
             </p>
             <div className="empty-state__actions">
               <Link href="/dashboard/sources" className="btn-primary">
-                Extract a Syllabus
+                Upload a syllabus
               </Link>
             </div>
           </div>
+          <QuickAddTask onCreated={loadTasks} />
         </div>
       </>
     );
