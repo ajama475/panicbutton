@@ -129,3 +129,7 @@ export async function patchSyllabusRecord(id, updater) {
 export async function deleteSyllabusRecord(id) {
   await withStore("readwrite", (store) => requestToPromise(store.delete(id)));
 }
+
+export async function clearSyllabusRecords() {
+  await withStore("readwrite", (store) => requestToPromise(store.clear()));
+}

@@ -8,7 +8,10 @@ import {
   isPrepWindowOpen,
   toggleTaskCompletion,
   formatISO,
+  readSetup,
 } from "../../../lib/tasks/taskHelpers";
+import PlanTaskModal from "../../components/PlanTaskModal";
+import CalendarAddModal from "../../components/CalendarAddModal";
 
 function getMonthMatrix(year, month) {
   const firstDay = new Date(year, month, 1);
@@ -107,7 +110,7 @@ function CalendarEvent({ task, isMilestone, onClick, isStartBy, isCommitment }) 
 }
 
 /* Day detail panel */
-function DayPanel({ dateIso, items, onClose, onToggle }) {
+function DayPanel({ dateIso, items, onClose, onToggle, onAdd, onPlan }) {
   if (!dateIso) return null;
 
   const formatTitle = formatDateLong(dateIso);
@@ -119,11 +122,17 @@ function DayPanel({ dateIso, items, onClose, onToggle }) {
           <h3 className="calendar-panel__date">{formatTitle}</h3>
           <p className="calendar-panel__count">{items.length} scheduled item{items.length !== 1 ? "s" : ""}</p>
         </div>
-        <button className="modal__close" onClick={onClose} aria-label="Close panel">×</button>
+        <div className="calendar-panel__header-actions">
+          <button className="btn-primary" type="button" onClick={() => onAdd(dateIso)}>+ Add</button>
+          <button className="modal__close" onClick={onClose} aria-label="Close panel">×</button>
+        </div>
       </div>
       <div className="calendar-panel__list">
         {items.length === 0 ? (
-          <p className="calendar-panel__empty">Nothing scheduled</p>
+          <div className="calendar-panel__empty">
+            <p>Nothing scheduled</p>
+            <button className="btn-ghost" type="button" onClick={() => onAdd(dateIso)}>Add a deadline or study session</button>
+          </div>
         ) : (
           items.map((item) => {
             const urgency = getTaskUrgency(item.dueDate, item.status);
@@ -181,6 +190,12 @@ function DayPanel({ dateIso, items, onClose, onToggle }) {
                   </div>
                 )}
 
+                {!item._isMilestone && !item._isStartBy && !isDone && (
+                  <button className="calendar-panel__plan" type="button" onClick={() => onPlan(item)}>
+                    {item.startCommitment ? "Change study plan" : "Plan a study session"}
+                  </button>
+                )}
+
                 {!item._isMilestone && !item._isStartBy && !item._isCommitment && !isDone && (
                   <button
                     className="calendar-panel__action"
@@ -202,6 +217,9 @@ export default function CalendarPage() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(null);
+  const [addDate, setAddDate] = useState(null);
+  const [planningTask, setPlanningTask] = useState(null);
+  const { courses } = useMemo(() => readSetup(), []);
   const today = new Date();
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
@@ -343,6 +361,7 @@ export default function CalendarPage() {
     <>
       <header className="page-header">
         <h1 className="page-title">Calendar</h1>
+        <button className="btn-primary" type="button" onClick={() => setAddDate(selectedDate || todayIso)}>+ Add</button>
       </header>
 
       <div className={`calendar-layout${selectedDate ? " calendar-layout--panel-open" : ""}`}>
@@ -465,8 +484,12 @@ export default function CalendarPage() {
           items={selectedItems}
           onClose={() => setSelectedDate(null)}
           onToggle={handleToggle}
+          onAdd={setAddDate}
+          onPlan={setPlanningTask}
         />
       </div>
+      <CalendarAddModal dateIso={addDate} tasks={tasks} courses={courses} onClose={() => setAddDate(null)} onSaved={loadTasks} />
+      <PlanTaskModal task={planningTask} initialDate={selectedDate} onClose={() => setPlanningTask(null)} onSaved={loadTasks} />
     </>
   );
 }

@@ -80,3 +80,7 @@ export async function patchTask(id, updater) {
 export async function deleteTask(id) {
   await withStore(TASKS_STORE, "readwrite", (store) => requestToPromise(store.delete(id)));
 }
+
+export async function clearTasks() {
+  await withStore(TASKS_STORE, "readwrite", (store) => requestToPromise(store.clear()));
+}

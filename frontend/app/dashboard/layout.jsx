@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import BackupRestoreModal from "../components/BackupRestoreModal";
 
 function IconLedger() {
   return (
@@ -83,6 +84,16 @@ function IconSettings() {
     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="3" />
       <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.09A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3v-4h.09A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.09A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.15.4.36.75.6 1 .28.3.66.44 1.1.4h.09v4h-.09a1.7 1.7 0 0 0-1.7.6Z" />
+    </svg>
+  );
+}
+
+function IconBackup() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3v12" />
+      <polyline points="7 10 12 15 17 10" />
+      <path d="M5 21h14a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2" />
     </svg>
   );
 }
@@ -189,6 +200,7 @@ export default function DashboardLayout({ children }) {
   const router = useRouter();
   const [setupValid, setSetupValid] = useState(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showDataModal, setShowDataModal] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const { theme, toggle: toggleTheme } = useTheme();
 
@@ -229,6 +241,7 @@ export default function DashboardLayout({ children }) {
   async function handleReset() {
     // 1. Clear localStorage
     localStorage.removeItem("sys-semester-setup");
+    localStorage.removeItem("sys-activation-guide-dismissed");
 
     // 2. Clear IndexedDB
     try {
@@ -327,6 +340,10 @@ export default function DashboardLayout({ children }) {
         ))}
 
         <div className="sidebar-footer">
+          <button className="sidebar-nav__item sidebar-edit-button" type="button" onClick={() => setShowDataModal(true)}>
+            <span className="sidebar-nav__icon"><IconBackup /></span>
+            Backup and restore
+          </button>
           <Link href="/?edit=1" className="sidebar-nav__item sidebar-edit-button">
             <span className="sidebar-nav__icon"><IconSettings /></span>
             Edit semester
@@ -340,7 +357,7 @@ export default function DashboardLayout({ children }) {
         </div>
       </aside>
 
-      <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+      <div className="dashboard-shell">
         {/* Top bar */}
         <header className="topbar">
           <div className="topbar__left">
@@ -361,6 +378,16 @@ export default function DashboardLayout({ children }) {
             </div>
           </div>
           <div className="topbar__actions">
+            <button
+              className="topbar__edit-link"
+              type="button"
+              aria-label="Backup and restore data"
+              title="Backup and restore"
+              onClick={() => setShowDataModal(true)}
+            >
+              <IconBackup />
+              <span>Backup</span>
+            </button>
             <Link
               href="/?edit=1"
               className="topbar__edit-link"
@@ -422,6 +449,7 @@ export default function DashboardLayout({ children }) {
           </div>
         </div>
       )}
+      <BackupRestoreModal open={showDataModal} onClose={() => setShowDataModal(false)} />
     </div>
   );
 }

@@ -17,6 +17,7 @@ import {
   readSetup,
 } from "../../../lib/tasks/taskHelpers";
 import { listSyllabusRecords, patchSyllabusRecord } from "../../../lib/storage/syllabusStore";
+import PlanTaskModal from "../../components/PlanTaskModal";
 
 function formatDate(isoDate) {
   if (!isoDate) return "";
@@ -44,6 +45,43 @@ function DifficultyDots({ value }) {
         <span key={dot} className={`dots__dot${dot <= value ? " dots__dot--filled" : ""}`} />
       ))}
     </div>
+  );
+}
+
+function MobileTaskCard({ task, onToggle, onEdit, onPlan }) {
+  const isDone = task.status === "done";
+  const urgency = getTaskUrgency(task.dueDate, task.status);
+
+  return (
+    <article className={`task-mobile-card${isDone ? " task-mobile-card--done" : ""}${task.isMilestone ? " task-mobile-card--milestone" : ""}`}>
+      <div className="task-mobile-card__main">
+        <input
+          className="horizon-card__checkbox"
+          type="checkbox"
+          checked={isDone}
+          aria-label={`Mark ${task.title} ${isDone ? "active" : "done"}`}
+          onChange={() => onToggle(task)}
+        />
+        <div className="task-mobile-card__copy">
+          <strong>{task.title}</strong>
+          <div className="task-mobile-card__meta">
+            {task.course && task.course !== "—" && <span>{task.course}</span>}
+            <span>{task.dueDate ? `Due ${formatDate(task.dueDate)}` : "No due date"}</span>
+            {!task.isMilestone && task.type && task.type !== "other" && <span>{task.type}</span>}
+          </div>
+        </div>
+        {urgency.label !== "—" && <UrgencyTag urgency={urgency} />}
+      </div>
+      {task.startCommitment?.scheduledAt && !task.isMilestone && (
+        <div className="task-mobile-card__session">Study session planned</div>
+      )}
+      <div className="task-mobile-card__actions">
+        {!task.isMilestone && !isDone && (
+          <button className="btn-ghost" type="button" onClick={() => onPlan(task)}>{task.startCommitment ? "Change plan" : "Plan session"}</button>
+        )}
+        <button className="btn-ghost" type="button" onClick={() => onEdit(task)}>Edit details</button>
+      </div>
+    </article>
   );
 }
 
@@ -332,6 +370,7 @@ export default function TaskLedgerPage() {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState(null);
+  const [planningTask, setPlanningTask] = useState(null);
   const [filter, setFilter] = useState("all"); // 'all' | 'syllabus' | 'personal'
   const [groupByCourse, setGroupByCourse] = useState(false);
 
@@ -514,6 +553,18 @@ export default function TaskLedgerPage() {
             {isMilestone && task.milestoneWhy && (
               <span className="cell-why-hint">{task.milestoneWhy}</span>
             )}
+            {!isMilestone && !isDone && (
+              <button
+                className="cell-plan-button"
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setPlanningTask(task);
+                }}
+              >
+                {task.startCommitment ? "Planned" : "Plan"}
+              </button>
+            )}
           </div>
         </td>
         <td className="cell-date">{formatDate(task.dueDate)}</td>
@@ -566,7 +617,7 @@ export default function TaskLedgerPage() {
 
   return (
     <>
-      <header className="page-header">
+      <header className="page-header page-header--ledger">
         <div>
           <h1 className="page-title">Task Ledger</h1>
           <p className="page-subtitle">{activeCount} active task{activeCount !== 1 ? "s" : ""} across all sources</p>
@@ -637,8 +688,20 @@ export default function TaskLedgerPage() {
             </p>
           </div>
         ) : (
-          <div className="db-table-wrap">
-            <table className="db-table">
+          <>
+            <div className="task-mobile-list">
+              {filteredTasks.map((task) => (
+                <MobileTaskCard
+                  key={task.id}
+                  task={task}
+                  onToggle={handleToggle}
+                  onEdit={handleOpenTask}
+                  onPlan={setPlanningTask}
+                />
+              ))}
+            </div>
+            <div className="db-table-wrap">
+              <table className="db-table">
               <thead>
                 <tr>
                   <th style={{ width: 40 }}></th>
@@ -653,8 +716,9 @@ export default function TaskLedgerPage() {
               <tbody>
                 {renderTableBody()}
               </tbody>
-            </table>
-          </div>
+              </table>
+            </div>
+          </>
         )}
       </div>
 
@@ -668,6 +732,7 @@ export default function TaskLedgerPage() {
         semester={semester}
         taskToEdit={taskToEdit}
       />
+      <PlanTaskModal task={planningTask} onClose={() => setPlanningTask(null)} onSaved={loadTasks} />
     </>
   );
 }

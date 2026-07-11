@@ -18,11 +18,16 @@ The product goal is simple: help students upload their syllabi, verify what matt
 - Editable course and semester details without deleting student work
 - Local PDF syllabus parsing with a verification queue
 - Manual and recurring tasks
+- An Unscheduled inbox so captured work never disappears
+- Study-session planning from Today, Tasks, and Calendar
+- Calendar-day creation for deadlines and study sessions
+- A guided semester-launch checklist
+- Portable JSON backup and restore for planning data
 - A deadline ledger, calendar, workload forecast, and focused planning mode
 - Responsive navigation, dark and light themes, and accessible recovery states
 - Static export for low-cost hosting; no account or backend is required
 
-Syllabi, extracted tasks, and planning data stay in the browser's local storage and IndexedDB. Clearing site data or changing browsers removes access to that local data.
+Syllabi, extracted tasks, and planning data stay in the browser's local storage and IndexedDB. Clearing site data or changing browsers removes access to that local data unless the student restores a downloaded backup. Backups include extracted syllabus data and review decisions, but not the original PDF files.
 
 ## Local Development
 

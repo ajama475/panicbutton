@@ -18,6 +18,8 @@ import {
   createTask,
 } from "../../lib/tasks/taskHelpers";
 import Link from "next/link";
+import PlanTaskModal from "../components/PlanTaskModal";
+import { listSyllabusRecords } from "../../lib/storage/syllabusStore";
 
 /* ===========================================
    SEMESTER CONTEXT
@@ -79,7 +81,9 @@ function toDateTimeLocal(date) {
 function defaultSessionTime() {
   const next = new Date();
   next.setHours(next.getHours() + 2, 0, 0, 0);
-  if (next.getHours() > 21) {
+  if (next.getHours() < 8) {
+    next.setHours(10, 0, 0, 0);
+  } else if (next.getHours() > 21) {
     next.setDate(next.getDate() + 1);
     next.setHours(10, 0, 0, 0);
   }
@@ -136,7 +140,7 @@ function SemesterBar({ semester }) {
   );
 }
 
-function TaskCard({ task, onToggle }) {
+function TaskCard({ task, onToggle, onPlan }) {
   const isDone = task.status === "done";
   const urgency = getTaskUrgency(task.dueDate, task.status);
 
@@ -160,6 +164,11 @@ function TaskCard({ task, onToggle }) {
           <span className="horizon-card__date">{formatDate(task.dueDate)}</span>
         </div>
       </div>
+      {!isDone && (
+        <button className="horizon-card__plan" type="button" onClick={() => onPlan(task)}>
+          {task.startCommitment ? "Change plan" : "Plan"}
+        </button>
+      )}
     </div>
   );
 }
@@ -246,10 +255,13 @@ function StartNowCard({ task, nextAction, onSaveCommitment }) {
   );
 }
 
-function PlanningBrief({ startNowItems, heavyWeek, buckets, todayHeading, completedThisWeek }) {
+function PlanningBrief({ startNowItems, plannedToday, buckets, todayHeading, completedThisWeek }) {
   const leadItem = startNowItems[0];
+  const leadSession = plannedToday[0];
   const dueSoonCount = buckets.Today.length + buckets["This Week"].length;
-  const nextMove = leadItem
+  const nextMove = leadSession
+    ? `${leadSession.title} at ${formatSessionTime(leadSession.startCommitment.scheduledAt)}`
+    : leadItem
     ? `${leadItem.task.title}: ${leadItem.nextAction.label}`
     : dueSoonCount > 0
       ? `${dueSoonCount} item${dueSoonCount !== 1 ? "s" : ""} due this week`
@@ -261,13 +273,15 @@ function PlanningBrief({ startNowItems, heavyWeek, buckets, todayHeading, comple
         <span className="planning-brief__eyebrow">{todayHeading}</span>
         <h2 className="planning-brief__title">{nextMove}</h2>
         <p className="planning-brief__copy">
-          Commit to one start session before reacting to the rest of the list.
+          {leadSession?.startCommitment?.firstStep
+            ? `First move: ${leadSession.startCommitment.firstStep}`
+            : "Commit to one start session before reacting to the rest of the list."}
         </p>
       </div>
       <div className="planning-brief__stats" aria-label="Planning totals">
         <div>
-          <strong>{startNowItems.length}</strong>
-          <span>Start now</span>
+          <strong>{plannedToday.length}</strong>
+          <span>Planned today</span>
         </div>
         <div>
           <strong>{dueSoonCount}</strong>
@@ -282,10 +296,10 @@ function PlanningBrief({ startNowItems, heavyWeek, buckets, todayHeading, comple
   );
 }
 
-function QuickAddTask({ onCreated }) {
+function QuickAddTask({ courses = [], onCreated }) {
   const [title, setTitle] = useState("");
   const [dueDate, setDueDate] = useState("");
-  const [type, setType] = useState("other");
+  const [courseId, setCourseId] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -296,17 +310,20 @@ function QuickAddTask({ onCreated }) {
     setIsSubmitting(true);
     setError("");
     try {
-      await createTask({
+      const course = courses.find((item) => item.id === courseId);
+      const created = await createTask({
         title: title.trim(),
         dueDate: dueDate || null,
-        type,
+        type: "other",
         difficulty: 0,
+        courseId: courseId || null,
+        courseLabel: course ? (course.code || course.name) : "—",
       });
 
       setTitle("");
       setDueDate("");
-      setType("other");
-      if (onCreated) await onCreated();
+      setCourseId("");
+      if (onCreated) await onCreated(created);
     } catch {
       setError("That task could not be saved. Check your browser storage and try again.");
     } finally {
@@ -338,17 +355,14 @@ function QuickAddTask({ onCreated }) {
       />
       <select
         className="quick-add-task__type"
-        value={type}
-        onChange={(e) => setType(e.target.value)}
-        aria-label="Task type"
+        value={courseId}
+        onChange={(e) => setCourseId(e.target.value)}
+        aria-label="Course"
       >
-        <option value="other">General</option>
-        <option value="assignment">Assignment</option>
-        <option value="reading">Reading</option>
-        <option value="quiz">Quiz</option>
-        <option value="project">Project</option>
-        <option value="essay">Essay</option>
-        <option value="exam">Exam</option>
+        <option value="">No course</option>
+        {courses.map((course) => (
+          <option key={course.id} value={course.id}>{course.code || course.name}</option>
+        ))}
       </select>
       <button type="submit" className="quick-add-task__submit" disabled={!title.trim() || isSubmitting}>
         {isSubmitting ? "Adding…" : "Add"}
@@ -392,7 +406,7 @@ function HeavyWeekCard({ signal }) {
   );
 }
 
-function BucketColumn({ title, tasks, onToggle }) {
+function BucketColumn({ title, tasks, onToggle, onPlan }) {
   return (
     <div className="horizon-bucket">
       <div className="horizon-bucket__header">
@@ -402,7 +416,7 @@ function BucketColumn({ title, tasks, onToggle }) {
       <div className="horizon-bucket__list">
         {tasks.length > 0 ? (
           tasks.map((task) => (
-            <TaskCard key={task.id} task={task} onToggle={onToggle} />
+            <TaskCard key={task.id} task={task} onToggle={onToggle} onPlan={onPlan} />
           ))
         ) : (
           <p className="horizon-bucket__empty">
@@ -414,6 +428,153 @@ function BucketColumn({ title, tasks, onToggle }) {
   );
 }
 
+const ACTIVATION_DISMISSED_KEY = "sys-activation-guide-dismissed";
+
+function ActivationGuide({ courses, tasks, syllabusCount, pendingReviewCount, onPlan }) {
+  const [dismissed, setDismissed] = useState(true);
+
+  useEffect(() => {
+    try {
+      setDismissed(localStorage.getItem(ACTIVATION_DISMISSED_KEY) === "true");
+    } catch {
+      setDismissed(false);
+    }
+  }, []);
+
+  if (dismissed) return null;
+
+  const activeTasks = tasks.filter((task) => task.status !== "done" && !task.isMilestone);
+  const firstTask = activeTasks[0] || null;
+  const hasCapturedWork = activeTasks.length > 0 || syllabusCount > 0;
+  const steps = [
+    { label: "Courses added", done: courses.length > 0 },
+    { label: "Work captured", done: hasCapturedWork },
+    { label: "At least one task scheduled", done: activeTasks.some((task) => task.dueDate || task.startCommitment?.scheduledAt) },
+    { label: "First study session planned", done: activeTasks.some((task) => task.startCommitment?.scheduledAt) },
+  ];
+  const completeCount = steps.filter((step) => step.done).length;
+  const complete = completeCount === steps.length;
+
+  function dismiss() {
+    setDismissed(true);
+    try { localStorage.setItem(ACTIVATION_DISMISSED_KEY, "true"); } catch {}
+  }
+
+  return (
+    <section className={`activation-guide${complete ? " activation-guide--complete" : ""}`} aria-labelledby="activation-title">
+      <div className="activation-guide__head">
+        <div>
+          <span className="activation-guide__eyebrow">Semester launch</span>
+          <h2 id="activation-title">{complete ? "Your planning loop is ready" : "Finish setting up a useful week"}</h2>
+          <p>{complete ? "You have captured work and committed to a real starting point." : `${completeCount} of ${steps.length} steps complete`}</p>
+        </div>
+        <button className="btn-ghost" type="button" onClick={dismiss}>{complete ? "Done" : "Hide for now"}</button>
+      </div>
+      <div className="activation-guide__steps">
+        {steps.map((step, index) => (
+          <div key={step.label} className={`activation-step${step.done ? " activation-step--done" : ""}`}>
+            <span className="activation-step__mark">{step.done ? "✓" : index + 1}</span>
+            <span>{step.label}</span>
+          </div>
+        ))}
+      </div>
+      {!complete && (
+        <div className="activation-guide__actions">
+          {pendingReviewCount > 0 ? (
+            <Link className="btn-primary" href="/dashboard/review">Review extracted deadlines</Link>
+          ) : !hasCapturedWork ? (
+            <Link className="btn-primary" href="/dashboard/sources">Upload a syllabus</Link>
+          ) : firstTask && !activeTasks.some((task) => task.startCommitment?.scheduledAt) ? (
+            <button className="btn-primary" type="button" onClick={() => onPlan(firstTask)}>Plan my first session</button>
+          ) : null}
+          <Link className="btn-ghost" href="/dashboard/ledger">Review all tasks</Link>
+        </div>
+      )}
+      {pendingReviewCount > 0 && (
+        <Link className="activation-guide__review" href="/dashboard/review">
+          <strong>{pendingReviewCount} extracted deadline{pendingReviewCount !== 1 ? "s" : ""} need verification</strong>
+          <span>Review them before they enter your plan →</span>
+        </Link>
+      )}
+    </section>
+  );
+}
+
+function UnscheduledInbox({ tasks, onToggle, onPlan }) {
+  if (tasks.length === 0) return null;
+
+  return (
+    <section className="unscheduled-inbox" aria-labelledby="unscheduled-title">
+      <div className="unscheduled-inbox__header">
+        <div>
+          <span className="unscheduled-inbox__eyebrow">Needs a decision</span>
+          <h2 id="unscheduled-title">Unscheduled</h2>
+          <p>These tasks are safely captured but have no deadline. Plan a session now or add details in Tasks.</p>
+        </div>
+        <span className="unscheduled-inbox__count">{tasks.length}</span>
+      </div>
+      <div className="unscheduled-inbox__list">
+        {tasks.map((task) => (
+          <article className="unscheduled-item" key={task.id}>
+            <input className="horizon-card__checkbox" type="checkbox" checked={false} aria-label={`Mark ${task.title} done`} onChange={() => onToggle(task)} />
+            <div className="unscheduled-item__copy">
+              <strong>{task.title}</strong>
+              <span>{[task.course && task.course !== "—" ? task.course : null, task.type && task.type !== "other" ? task.type : null].filter(Boolean).join(" · ") || "No course or type yet"}</span>
+            </div>
+            <div className="unscheduled-item__actions">
+              <button className="btn-primary" type="button" onClick={() => onPlan(task)}>{task.startCommitment ? "Change plan" : "Plan session"}</button>
+              <Link className="btn-ghost" href="/dashboard/ledger">Add details</Link>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function CaptureNotice({ task, onDismiss, onPlan }) {
+  if (!task) return null;
+  return (
+    <div className="capture-notice" role="status">
+      <div>
+        <strong>{task.title} was saved.</strong>
+        <span>{task.dueDate ? "It is now part of your plan." : "It is waiting safely in Unscheduled."}</span>
+      </div>
+      <div className="capture-notice__actions">
+        {!task.dueDate && <button className="btn-ghost" type="button" onClick={() => onPlan(task)}>Plan it now</button>}
+        <button className="capture-notice__close" type="button" aria-label="Dismiss task saved message" onClick={onDismiss}>×</button>
+      </div>
+    </div>
+  );
+}
+
+function PlannedToday({ tasks, onPlan }) {
+  if (tasks.length === 0) return null;
+  return (
+    <section className="planned-today" aria-labelledby="planned-today-title">
+      <div className="planned-today__header">
+        <div>
+          <span className="activation-guide__eyebrow">Committed time</span>
+          <h2 id="planned-today-title">Planned today</h2>
+        </div>
+        <span>{tasks.length} session{tasks.length !== 1 ? "s" : ""}</span>
+      </div>
+      <div className="planned-today__list">
+        {tasks.map((task) => (
+          <article className="planned-session" key={task.id}>
+            <div className="planned-session__time">{formatSessionTime(task.startCommitment.scheduledAt)}</div>
+            <div className="planned-session__copy">
+              <strong>{task.title}</strong>
+              <span>{[task.startCommitment.place, task.startCommitment.firstStep].filter(Boolean).join(" · ") || "A starting time is set"}</span>
+            </div>
+            <button className="btn-ghost" type="button" onClick={() => onPlan(task)}>Change</button>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 /* ===========================================
    PAGE
    =========================================== */
@@ -421,19 +582,24 @@ function BucketColumn({ title, tasks, onToggle }) {
 export default function WhatMattersPage() {
   const [tasks, setTasks] = useState([]);
   const [parentTasks, setParentTasks] = useState([]);
+  const [syllabusRecords, setSyllabusRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
-  const { semester } = useMemo(() => readSetup(), []);
+  const [planningTask, setPlanningTask] = useState(null);
+  const [recentTask, setRecentTask] = useState(null);
+  const { semester, courses } = useMemo(() => readSetup(), []);
 
   const loadTasks = useCallback(async () => {
     setLoadError("");
     try {
-      const [allData, parentData] = await Promise.all([
+      const [allData, parentData, records] = await Promise.all([
         getAllSemesterTasks(),
         getParentTasks(),
+        listSyllabusRecords(),
       ]);
       setTasks(allData);
       setParentTasks(parentData);
+      setSyllabusRecords(records);
     } catch {
       setLoadError("Your local semester data could not be opened. Reload the page or check this browser's storage permissions.");
     } finally {
@@ -442,6 +608,11 @@ export default function WhatMattersPage() {
   }, []);
 
   useEffect(() => { loadTasks(); }, [loadTasks]);
+
+  async function handleTaskCreated(task) {
+    setRecentTask(task);
+    await loadTasks();
+  }
 
   async function handleToggle(task) {
     await toggleTaskCompletion(task);
@@ -454,6 +625,10 @@ export default function WhatMattersPage() {
   }
 
   const todayHeading = useMemo(() => formatTodayHeading(), []);
+  const pendingReviewCount = syllabusRecords.reduce(
+    (total, record) => total + (record.reviewItems || []).filter((item) => item.status === "pending").length,
+    0,
+  );
 
   if (loading) {
     return (
@@ -488,6 +663,7 @@ export default function WhatMattersPage() {
         </header>
         <div className="what-matters-page">
           <SemesterBar semester={semester} />
+          <ActivationGuide courses={courses} tasks={parentTasks} syllabusCount={syllabusRecords.length} pendingReviewCount={pendingReviewCount} onPlan={setPlanningTask} />
           <div className="empty-state">
             <div className="empty-state__icon">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -504,8 +680,10 @@ export default function WhatMattersPage() {
               </Link>
             </div>
           </div>
-          <QuickAddTask onCreated={loadTasks} />
+          <QuickAddTask courses={courses} onCreated={handleTaskCreated} />
+          <CaptureNotice task={recentTask} onDismiss={() => setRecentTask(null)} onPlan={setPlanningTask} />
         </div>
+        <PlanTaskModal task={planningTask} onClose={() => setPlanningTask(null)} onSaved={loadTasks} />
       </>
     );
   }
@@ -523,6 +701,9 @@ export default function WhatMattersPage() {
   startNowItems.sort((a, b) => getEffortPriorityScore(b.task) - getEffortPriorityScore(a.task));
 
   const heavyWeek = getHeavyWeekSignal(parentTasks);
+  const unscheduledTasks = parentTasks
+    .filter((task) => task.status !== "done" && !task.isMilestone && !task.dueDate)
+    .sort((first, second) => (second.createdAt || 0) - (first.createdAt || 0));
 
   // Standard buckets from all tasks (excluding milestone rows for cleaner display)
   const buckets = { Overdue: [], Today: [], "This Week": [], "Next Week": [] };
@@ -539,6 +720,10 @@ export default function WhatMattersPage() {
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  const todayIso = formatISO(today);
+  const plannedToday = parentTasks
+    .filter((task) => task.status !== "done" && task.startCommitment?.scheduledAt?.slice(0, 10) === todayIso)
+    .sort((first, second) => first.startCommitment.scheduledAt.localeCompare(second.startCommitment.scheduledAt));
   const startOfWeek = new Date(today);
   startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay()); // Sunday
   
@@ -561,15 +746,22 @@ export default function WhatMattersPage() {
       <div className="what-matters-page">
         <SemesterBar semester={semester} />
 
+        <ActivationGuide courses={courses} tasks={parentTasks} syllabusCount={syllabusRecords.length} pendingReviewCount={pendingReviewCount} onPlan={setPlanningTask} />
+
         <PlanningBrief
           startNowItems={startNowItems}
-          heavyWeek={heavyWeek}
+          plannedToday={plannedToday}
           buckets={buckets}
           todayHeading={todayHeading}
           completedThisWeek={completedThisWeek}
         />
 
-        <QuickAddTask onCreated={loadTasks} />
+        <QuickAddTask courses={courses} onCreated={handleTaskCreated} />
+        <CaptureNotice task={recentTask} onDismiss={() => setRecentTask(null)} onPlan={setPlanningTask} />
+
+        <PlannedToday tasks={plannedToday} onPlan={setPlanningTask} />
+
+        <UnscheduledInbox tasks={unscheduledTasks} onToggle={handleToggle} onPlan={setPlanningTask} />
 
         <div className="what-matters-top-grid">
           {startNowItems.length > 0 ? (
@@ -603,14 +795,15 @@ export default function WhatMattersPage() {
           </div>
           <div className="horizon-board">
             {buckets.Overdue.length > 0 && (
-              <BucketColumn title="Overdue" tasks={buckets.Overdue} onToggle={handleToggle} />
+            <BucketColumn title="Overdue" tasks={buckets.Overdue} onToggle={handleToggle} onPlan={setPlanningTask} />
             )}
-            <BucketColumn title="Today" tasks={buckets.Today} onToggle={handleToggle} />
-            <BucketColumn title="This Week" tasks={buckets["This Week"]} onToggle={handleToggle} />
-            <BucketColumn title="Next Week" tasks={buckets["Next Week"]} onToggle={handleToggle} />
+            <BucketColumn title="Today" tasks={buckets.Today} onToggle={handleToggle} onPlan={setPlanningTask} />
+            <BucketColumn title="This Week" tasks={buckets["This Week"]} onToggle={handleToggle} onPlan={setPlanningTask} />
+            <BucketColumn title="Next Week" tasks={buckets["Next Week"]} onToggle={handleToggle} onPlan={setPlanningTask} />
           </div>
         </section>
       </div>
+      <PlanTaskModal task={planningTask} onClose={() => setPlanningTask(null)} onSaved={loadTasks} />
     </>
   );
 }
